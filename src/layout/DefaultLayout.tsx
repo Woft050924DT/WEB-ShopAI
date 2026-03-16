@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header/Header';
+import Sidebar from './Sidebar/Sidebar';
 
 const DefaultLayout = () => {
   return (
@@ -8,6 +9,7 @@ const DefaultLayout = () => {
       <Header />
       <main>
         <Outlet />
+        <Sidebar />
       </main>
     </div>
   );
