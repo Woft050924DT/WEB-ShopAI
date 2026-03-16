@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import '../globals.css';
 
 export const metadata: Metadata = {
-  title: 'VietShop',
-  description: 'Cửa hàng trực tuyến VietShop',
+  title: 'Xác thực - VietShop',
+  description: 'Đăng nhập, đăng ký, quên mật khẩu VietShop',
 };
 
-export default function RootLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
