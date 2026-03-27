@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { normalizeApiError, register } from '@/src/lib/api';
+import { setStoredAddress, setStoredAuth } from '@/src/lib/storage';
 
 const RegisterPage = () => {
   const router = useRouter();
@@ -32,101 +34,114 @@ const RegisterPage = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (formData.password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      setError('Mat khau phai co it nhat 6 ky tu');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu không khớp');
+      setError('Mat khau khong khop');
       return;
     }
 
     if (!agreedTerms) {
-      setError('Vui lòng đồng ý với điều khoản sử dụng');
+      setError('Vui long dong y voi dieu khoan su dung');
       return;
     }
 
     setLoading(true);
 
     try {
-      // TODO: Gọi API đăng ký
-      console.log('Register with:', formData);
-      // router.push('/auth/login');
-      setError('Tính năng này sắp ra mắt!');
+      const response = await register({
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      setStoredAuth({
+        token: response.token,
+        user: response.user,
+      });
+
+      setStoredAddress({
+        fullName: response.user.fullName,
+        email: response.user.email,
+        phone: formData.phone,
+        line1: '',
+        line2: '',
+        city: '',
+        district: '',
+        ward: '',
+        postalCode: '',
+        country: 'Vietnam',
+        notes: '',
+      });
+
+      router.push('/account');
     } catch (err) {
-      setError('Đăng ký thất bại. Vui lòng thử lại.');
+      setError(normalizeApiError(err));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5F6FA] to-[#FFFFFF] flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#F5F6FA] to-[#FFFFFF] px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-[#EF3D32] rounded-lg grid place-items-center text-white text-xl">⚡</div>
+        <div className="mb-8 text-center">
+          <Link href="/" className="mb-6 inline-flex items-center gap-2">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EF3D32] text-xl text-white">V</div>
             <span className="text-2xl font-bold text-[#1F2937]">VietShop</span>
           </Link>
-          <h1 className="text-3xl font-bold text-[#1F2937] mb-2">Đăng ký</h1>
-          <p className="text-gray-500">Tạo tài khoản để bắt đầu mua sắm</p>
+          <h1 className="mb-2 text-3xl font-bold text-[#1F2937]">Dang ky</h1>
+          <p className="text-gray-500">Tao tai khoan de bat dau mua sam</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-8 shadow-lg">
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+          ) : null}
 
-          {/* Full Name */}
           <div>
-            <label className="block text-sm font-semibold text-[#1F2937] mb-2">Họ và tên</label>
+            <label className="mb-2 block text-sm font-semibold text-[#1F2937]">Ho va ten</label>
             <input
               type="text"
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              placeholder="Nguyễn Văn A"
-              className="w-full h-11 px-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-[#1F2937] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20 focus:border-[#EF3D32] transition-all"
+              placeholder="Nguyen Van A"
+              className="h-11 w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-[#1F2937] placeholder-gray-400 transition-all focus:border-[#EF3D32] focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20"
               required
             />
           </div>
 
-          {/* Email */}
           <div>
-            <label className="block text-sm font-semibold text-[#1F2937] mb-2">Email</label>
+            <label className="mb-2 block text-sm font-semibold text-[#1F2937]">Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               placeholder="your@email.com"
-              className="w-full h-11 px-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-[#1F2937] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20 focus:border-[#EF3D32] transition-all"
+              className="h-11 w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-[#1F2937] placeholder-gray-400 transition-all focus:border-[#EF3D32] focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20"
               required
             />
           </div>
 
-          {/* Phone */}
           <div>
-            <label className="block text-sm font-semibold text-[#1F2937] mb-2">Số điện thoại</label>
+            <label className="mb-2 block text-sm font-semibold text-[#1F2937]">So dien thoai</label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
               placeholder="0912345678"
-              className="w-full h-11 px-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-[#1F2937] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20 focus:border-[#EF3D32] transition-all"
+              className="h-11 w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-[#1F2937] placeholder-gray-400 transition-all focus:border-[#EF3D32] focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20"
             />
           </div>
 
-          {/* Password */}
           <div>
-            <label className="block text-sm font-semibold text-[#1F2937] mb-2">Mật khẩu</label>
+            <label className="mb-2 block text-sm font-semibold text-[#1F2937]">Mat khau</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -134,23 +149,22 @@ const RegisterPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-[#1F2937] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20 focus:border-[#EF3D32] transition-all"
+                className="h-11 w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-[#1F2937] placeholder-gray-400 transition-all focus:border-[#EF3D32] focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20"
                 required
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? 'An' : 'Hien'}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Tối thiểu 6 ký tự</p>
+            <p className="mt-1 text-xs text-gray-500">Toi thieu 6 ky tu</p>
           </div>
 
-          {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-semibold text-[#1F2937] mb-2">Xác nhận mật khẩu</label>
+            <label className="mb-2 block text-sm font-semibold text-[#1F2937]">Xac nhan mat khau</label>
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -158,55 +172,46 @@ const RegisterPage = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full h-11 px-4 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-[#1F2937] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20 focus:border-[#EF3D32] transition-all"
+                className="h-11 w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-4 text-[#1F2937] placeholder-gray-400 transition-all focus:border-[#EF3D32] focus:outline-none focus:ring-2 focus:ring-[#EF3D32]/20"
                 required
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowConfirmPassword((current) => !current)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                {showConfirmPassword ? 'An' : 'Hien'}
               </button>
             </div>
           </div>
 
-          {/* Terms Checkbox */}
-          <label className="flex items-start gap-3 mt-4">
+          <label className="mt-4 flex items-start gap-3">
             <input
               type="checkbox"
               checked={agreedTerms}
               onChange={(e) => setAgreedTerms(e.target.checked)}
-              className="w-5 h-5 mt-0.5 rounded border-gray-300 text-[#EF3D32] cursor-pointer"
+              className="mt-0.5 h-5 w-5 cursor-pointer rounded border-gray-300 text-[#EF3D32]"
             />
             <span className="text-sm text-gray-600">
-              Tôi đồng ý với{' '}
-              <Link href="#" className="text-[#EF3D32] hover:underline">
-                Điều khoản sử dụng
-              </Link>
-              {' '}và{' '}
-              <Link href="#" className="text-[#EF3D32] hover:underline">
-                Chính sách bảo mật
-              </Link>
+              Toi dong y voi <Link href="#" className="text-[#EF3D32] hover:underline">Dieu khoan su dung</Link> va{' '}
+              <Link href="#" className="text-[#EF3D32] hover:underline">Chinh sach bao mat</Link>
             </span>
           </label>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 bg-[#EF3D32] hover:bg-[#D83027] text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            className="mt-6 h-11 w-full rounded-lg bg-[#EF3D32] font-bold text-white transition-colors hover:bg-[#D83027] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? 'Đang xử lý...' : 'Đăng ký'}
+            {loading ? 'Dang xu ly...' : 'Dang ky'}
           </button>
         </form>
 
-        {/* Login Link */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Đã có tài khoản?{' '}
-            <Link href="/auth/login" className="font-bold text-[#EF3D32] hover:text-[#D83027] transition-colors">
-              Đăng nhập
+            Da co tai khoan?{' '}
+            <Link href="/auth/login" className="font-bold text-[#EF3D32] transition-colors hover:text-[#D83027]">
+              Dang nhap
             </Link>
           </p>
         </div>

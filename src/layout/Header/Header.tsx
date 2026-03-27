@@ -1,66 +1,106 @@
 'use client';
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getStoredAuth, getStoredCart } from '@/src/lib/storage';
 
 const Header = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
+  const [initials, setInitials] = useState('VS');
+  const [accountLabel, setAccountLabel] = useState('Tai khoan');
+
+  useEffect(() => {
+    const syncState = () => {
+      const auth = getStoredAuth();
+      const cart = getStoredCart();
+
+      setCartCount(cart.reduce((sum, item) => sum + item.quantity, 0));
+
+      if (auth?.user) {
+        const nextInitials = auth.user.fullName
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part) => part[0]?.toUpperCase())
+          .join('');
+
+        setInitials(nextInitials || 'VS');
+        setAccountLabel(auth.user.fullName);
+      } else {
+        setInitials('VS');
+        setAccountLabel('Tai khoan');
+      }
+    };
+
+    syncState();
+    window.addEventListener('storage', syncState);
+    window.addEventListener('vietshop-storage', syncState);
+
+    return () => {
+      window.removeEventListener('storage', syncState);
+      window.removeEventListener('vietshop-storage', syncState);
+    };
+  }, []);
+
+  const handleSearch = () => {
+    router.push(`/products?q=${encodeURIComponent(searchQuery)}`);
+  };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-[#E7E9EE]">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 bg-[#EF3D32] rounded-lg grid place-items-center text-white">
-            ⚡
-          </div>
-          <span className="text-xl leading-none font-bold text-[#1F2937] hidden md:block">VietShop</span>
+    <header className="sticky top-0 z-50 border-b border-[#E7E9EE] bg-white">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#EF3D32] text-white">V</div>
+          <span className="hidden text-xl font-bold leading-none text-[#1F2937] md:block">VietShop</span>
         </Link>
 
         <div className="flex-1">
           <div className="relative flex items-center">
-            <span className="absolute left-4 text-[#9CA3AF]">🔍</span>
+            <span className="absolute left-4 text-[#9CA3AF]">Tim</span>
             <input
               type="text"
-              placeholder="Tìm kiếm sản phẩm..."
+              placeholder="Tim kiem san pham..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-11 pr-24 rounded-full text-sm border border-[#E5E7EB] bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/25 focus:border-[#1565C0]"
-              onKeyDown={(e) => e.key === 'Enter' && router.push(`/products?q=${encodeURIComponent(searchQuery)}`)}
+              className="h-11 w-full rounded-full border border-[#E5E7EB] bg-[#F9FAFB] pl-11 pr-24 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/25"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <button
-              onClick={() => router.push(`/products?q=${encodeURIComponent(searchQuery)}`)}
-              className="absolute right-1.5 h-8 px-4 bg-[#EF3D32] text-white text-xs rounded-full hover:bg-[#D83027] transition-colors font-semibold"
+              onClick={handleSearch}
+              className="absolute right-1.5 h-8 rounded-full bg-[#EF3D32] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#D83027]"
             >
-              Tìm
+              Tim
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button className="relative w-9 h-9 rounded-full hover:bg-gray-100 grid place-items-center">
-            <span className="text-[#212121]">🔔</span>
-            <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-[#EF3D32] rounded-full text-white text-[9px] flex items-center justify-center font-bold">3</span>
+        <div className="flex shrink-0 items-center gap-2">
+          <button className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-gray-100">
+            <span className="text-[#212121]">!</span>
+            <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF3D32] text-[9px] font-bold text-white">1</span>
           </button>
           <button
-            className="relative w-9 h-9 rounded-full hover:bg-gray-100 grid place-items-center"
+            className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-gray-100"
             onClick={() => router.push('/cart')}
           >
-            <span className="text-[#212121]">🛒</span>
-            {cartCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-[#EF3D32] rounded-full text-white text-[9px] flex items-center justify-center font-bold">
+            <span className="text-[#212121]">Cart</span>
+            {cartCount > 0 ? (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#EF3D32] px-1 text-[9px] font-bold text-white">
                 {cartCount}
               </span>
-            )}
+            ) : null}
           </button>
           <button
-            className="hidden sm:flex items-center gap-2 pl-1 pr-2 py-1 hover:bg-gray-100 rounded-full"
+            className="hidden items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-gray-100 sm:flex"
             onClick={() => router.push('/account')}
           >
-            <div className="w-7 h-7 bg-[#1976D2] rounded-full flex items-center justify-center text-white text-xs font-bold">NA</div>
-            <span className="text-sm text-[#111827]">Tài khoản</span>
-            <span className="text-[#6B7280] text-xs">▾</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1976D2] text-xs font-bold text-white">
+              {initials}
+            </div>
+            <span className="max-w-[140px] truncate text-sm text-[#111827]">{accountLabel}</span>
           </button>
         </div>
       </div>
