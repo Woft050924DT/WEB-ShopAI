@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 'use client';
 
 export default function AdminCategoriesPage() {
