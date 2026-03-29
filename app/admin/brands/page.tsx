@@ -2,51 +2,51 @@
 
 import { useEffect, useState, ChangeEvent } from "react";
 
-interface Category {
+interface Brand {
   id: string;
   name: string;
-  isActive: boolean; // dùng trực tiếp từ backend
+  isActive: boolean;
 }
 
-export default function CategoryAdminPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newCategory, setNewCategory] = useState("");
+export default function BrandAdminPage() {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [newBrand, setNewBrand] = useState("");
   const [status, setStatus] = useState<"Active" | "Inactive">("Active");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = "http://localhost:5000/api/categories"; // đổi port nếu cần
+  const API_BASE = "http://localhost:5000/api/brands"; // đổi port nếu khác
 
-  // ===== FETCH CATEGORY =====
-  const fetchCategories = async () => {
+  // ===== FETCH BRANDS =====
+  const fetchBrands = async () => {
     setLoading(true);
     try {
       const res = await fetch(API_BASE);
       const data = await res.json();
-      const mapped: Category[] = (data.categories || []).map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        isActive: c.isActive, // dùng luôn isActive
+      const mapped: Brand[] = (data.brands || []).map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        isActive: b.isActive,
       }));
-      setCategories(mapped);
+      setBrands(mapped);
     } catch (err) {
-      alert("Không thể load category");
+      alert("Không thể load thương hiệu");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchBrands();
   }, []);
 
   // ===== ADD / UPDATE =====
   const handleAddOrUpdate = async () => {
-    if (!newCategory.trim()) return alert("Nhập tên danh mục");
+    if (!newBrand.trim()) return alert("Nhập tên thương hiệu");
 
     const payload = {
-      name: newCategory.trim(),
-      isActive: status === "Active", // convert sang boolean
+      name: newBrand.trim(),
+      isActive: status === "Active",
     };
 
     try {
@@ -69,30 +69,38 @@ export default function CategoryAdminPage() {
       if (!res.ok) return alert(data.message);
 
       // reset form
-      setNewCategory("");
+      setNewBrand("");
       setStatus("Active");
       setEditingId(null);
-      fetchCategories();
+      fetchBrands();
     } catch (err: any) {
       alert(err.message);
     }
   };
 
   // ===== EDIT =====
-  const handleEdit = (cat: Category) => {
-    setNewCategory(cat.name);
-    setStatus(cat.isActive ? "Active" : "Inactive"); // map đúng
-    setEditingId(cat.id);
+  const handleEdit = (brand: Brand) => {
+    setNewBrand(brand.name);
+    setStatus(brand.isActive ? "Active" : "Inactive");
+    setEditingId(brand.id);
   };
 
-  // ===== DELETE =====
-  const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa danh mục này?")) return;
+  // ===== SOFT DELETE / TOGGLE ACTIVE =====
+  const handleToggleActive = async (brand: Brand) => {
+    const confirmMsg = brand.isActive 
+      ? "Bạn có chắc muốn ẩn thương hiệu này?" 
+      : "Bạn có chắc muốn kích hoạt thương hiệu này?";
+    if (!confirm(confirmMsg)) return;
+
     try {
-      const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/${brand.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !brand.isActive, name: brand.name }),
+      });
       const data = await res.json();
       if (!res.ok) return alert(data.message);
-      fetchCategories();
+      fetchBrands(); // load lại danh sách
     } catch (err: any) {
       alert(err.message);
     }
@@ -100,23 +108,25 @@ export default function CategoryAdminPage() {
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen text-black">
-      <h1 className="text-2xl font-bold mb-6">Quản lý danh mục</h1>
+      <h1 className="text-2xl font-bold mb-6">Quản lý thương hiệu</h1>
 
       {/* FORM ADD / EDIT */}
       <div className="bg-white border border-gray-300 rounded-xl p-4 flex flex-col md:flex-row gap-2 mb-6 shadow-sm">
         <input
           type="text"
-          placeholder="Nhập tên danh mục..."
-          value={newCategory}
+          placeholder="Nhập tên thương hiệu..."
+          value={newBrand}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            setNewCategory(e.target.value)
+            setNewBrand(e.target.value)
           }
           className="border border-gray-300 p-2 rounded w-full"
         />
 
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value as "Active" | "Inactive")}
+          onChange={(e) =>
+            setStatus(e.target.value as "Active" | "Inactive")
+          }
           className="border border-gray-300 p-2 rounded w-full md:w-48"
         >
           <option value="Active">Active</option>
@@ -146,40 +156,42 @@ export default function CategoryAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {categories.length === 0 ? (
+              {brands.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-4 text-center text-gray-500">
-                    Chưa có danh mục nào
+                    Chưa có thương hiệu nào
                   </td>
                 </tr>
               ) : (
-                categories.map((cat) => (
-                  <tr key={cat.id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="p-2">{cat.id}</td>
-                    <td className="p-2">{cat.name}</td>
+                brands.map((brand) => (
+                  <tr key={brand.id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <td className="p-2">{brand.id}</td>
+                    <td className="p-2">{brand.name}</td>
                     <td className="p-2">
                       <span
                         className={`px-2 py-1 rounded text-sm ${
-                          cat.isActive
+                          brand.isActive
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-600"
                         }`}
                       >
-                        {cat.isActive ? "Active" : "Inactive"}
+                        {brand.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="p-2 text-right space-x-2">
                       <button
-                        onClick={() => handleEdit(cat)}
+                        onClick={() => handleEdit(brand)}
                         className="px-3 py-1 border border-gray-400 rounded hover:bg-gray-100"
                       >
                         ✏️
                       </button>
                       <button
-                        onClick={() => handleDelete(cat.id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                        onClick={() => handleToggleActive(brand)}
+                        className={`px-3 py-1 rounded text-white ${
+                          brand.isActive ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+                        }`}
                       >
-                        🗑
+                        {brand.isActive ? "Ẩn" : "Kích hoạt"}
                       </button>
                     </td>
                   </tr>
