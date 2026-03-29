@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { login, normalizeApiError } from '@/src/lib/api';
-import { setStoredAddress, setStoredAuth } from '@/src/lib/storage';
+import { normalizeApiError } from '@/src/services/api-client.service';
+import { getCurrentUser, login } from '@/src/services/auth.service';
+import { getStoredAuth, setStoredAddress, setStoredAuth } from '@/src/lib/storage';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -15,6 +16,35 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const getRedirectTarget = () => {
+    if (typeof window === 'undefined') {
+      return '/account';
+    }
+
+    return new URLSearchParams(window.location.search).get('redirect') || '/account';
+  };
+
+  useEffect(() => {
+    const bootstrapAuth = async () => {
+      const storedAuth = getStoredAuth();
+
+      if (storedAuth?.user) {
+        router.replace(storedAuth.user.role === 'admin' ? '/admin' : getRedirectTarget());
+        return;
+      }
+
+      try {
+        const user = await getCurrentUser();
+        setStoredAuth({ user, token: storedAuth?.token });
+        router.replace(user.role === 'admin' ? '/admin' : getRedirectTarget());
+      } catch {
+        return;
+      }
+    };
+
+    void bootstrapAuth();
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -31,16 +61,17 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await login(formData);
+      const authResponse = await login(formData);
+      const user = authResponse.user;
 
       setStoredAuth({
-        token: response.token,
-        user: response.user,
+        user,
+        token: authResponse.token,
       });
 
       setStoredAddress({
-        fullName: response.user.fullName,
-        email: response.user.email,
+        fullName: user.fullName,
+        email: user.email,
         phone: '',
         line1: '',
         line2: '',
@@ -52,7 +83,7 @@ const LoginPage = () => {
         notes: '',
       });
 
-      router.push('/account');
+      router.push(user.role === 'admin' ? '/admin' : getRedirectTarget());
     } catch (err) {
       setError(normalizeApiError(err));
     } finally {

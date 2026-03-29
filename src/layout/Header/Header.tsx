@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getStoredAuth, getStoredCart } from '@/src/lib/storage';
+import { getCurrentUser } from '@/src/services/auth.service';
+import { getStoredAuth, getStoredCart, setStoredAuth } from '@/src/lib/storage';
 
 const Header = () => {
   const router = useRouter();
@@ -36,6 +37,16 @@ const Header = () => {
     };
 
     syncState();
+    void getCurrentUser()
+      .then((user) => {
+        const auth = getStoredAuth();
+        if (!auth || auth.user.id !== user.id || auth.user.role !== user.role) {
+          setStoredAuth({ user, token: auth?.token });
+        }
+      })
+      .catch(() => {
+        return;
+      });
     window.addEventListener('storage', syncState);
     window.addEventListener('vietshop-storage', syncState);
 
@@ -95,7 +106,7 @@ const Header = () => {
           </button>
           <button
             className="hidden items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-gray-100 sm:flex"
-            onClick={() => router.push('/account')}
+            onClick={() => router.push(getStoredAuth()?.user.role === 'admin' ? '/admin' : '/account')}
           >
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1976D2] text-xs font-bold text-white">
               {initials}

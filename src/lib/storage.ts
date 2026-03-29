@@ -1,6 +1,8 @@
 'use client';
 
-import type { AuthUser, Order, Product, ProductVariant } from '@/src/lib/api';
+import type { AuthUser } from '@/src/models/auth.model';
+import type { Order } from '@/src/models/order.model';
+import type { Product, ProductVariant } from '@/src/models/product.model';
 
 const KEYS = {
   auth: 'vietshop_auth',
@@ -10,8 +12,8 @@ const KEYS = {
 };
 
 export type StoredAuth = {
-  token: string;
   user: AuthUser;
+  token?: string;
 };
 
 export type StoredCartItem = {
@@ -81,11 +83,21 @@ function writeJson<T>(key: string, value: T) {
 }
 
 export function getStoredAuth() {
-  return readJson<StoredAuth | null>(KEYS.auth, null);
+  const auth = readJson<StoredAuth | null>(KEYS.auth, null);
+
+  if (!auth?.user) {
+    return null;
+  }
+
+  return auth;
 }
 
 export function setStoredAuth(value: StoredAuth) {
   writeJson(KEYS.auth, value);
+}
+
+export function getStoredToken() {
+  return getStoredAuth()?.token;
 }
 
 export function clearStoredAuth() {
@@ -95,6 +107,20 @@ export function clearStoredAuth() {
 
   window.localStorage.removeItem(KEYS.auth);
   window.dispatchEvent(new Event('vietshop-storage'));
+}
+
+export function clearStoredAddress() {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.removeItem(KEYS.address);
+  window.dispatchEvent(new Event('vietshop-storage'));
+}
+
+export function clearSessionStorage() {
+  clearStoredAuth();
+  clearStoredAddress();
 }
 
 export function getStoredCart() {

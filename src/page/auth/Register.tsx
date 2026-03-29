@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { normalizeApiError, register } from '@/src/lib/api';
+import { normalizeApiError } from '@/src/services/api-client.service';
+import { register } from '@/src/services/auth.service';
 import { setStoredAddress, setStoredAuth } from '@/src/lib/storage';
 
 const RegisterPage = () => {
@@ -52,20 +53,21 @@ const RegisterPage = () => {
     setLoading(true);
 
     try {
-      const response = await register({
+      const authResponse = await register({
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
       });
+      const user = authResponse.user;
 
       setStoredAuth({
-        token: response.token,
-        user: response.user,
+        user,
+        token: authResponse.token,
       });
 
       setStoredAddress({
-        fullName: response.user.fullName,
-        email: response.user.email,
+        fullName: user.fullName,
+        email: user.email,
         phone: formData.phone,
         line1: '',
         line2: '',
@@ -77,7 +79,7 @@ const RegisterPage = () => {
         notes: '',
       });
 
-      router.push('/account');
+      router.push(user.role === 'admin' ? '/admin' : '/account');
     } catch (err) {
       setError(normalizeApiError(err));
     } finally {

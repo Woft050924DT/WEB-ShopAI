@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { createOrder, formatCurrency, normalizeApiError } from '@/src/lib/api';
+import { normalizeApiError } from '@/src/services/api-client.service';
+import { createOrder } from '@/src/services/order.service';
+import { formatCurrency } from '@/src/services/product.service';
 import { addStoredOrder, getStoredAddress, getStoredAuth, getStoredCart, setStoredCart, type StoredAddress, type StoredCartItem } from '@/src/lib/storage';
 
 function getDisplayPrice(item: StoredCartItem) {

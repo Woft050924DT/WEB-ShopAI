@@ -11,11 +11,5 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="vi">
-      <body className="bg-[#F5F6FA] text-[#212121] min-h-screen antialiased">
-        {children}
-      </body>
-    </html>
-  );
+  return <div className="min-h-screen bg-[#F5F6FA] text-[#212121] antialiased">{children}</div>;
 }

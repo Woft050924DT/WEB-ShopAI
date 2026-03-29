@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { formatCurrency, getProducts, normalizeApiError, type Product } from '@/src/lib/api';
+import type { Product } from '@/src/models/product.model';
+import { normalizeApiError } from '@/src/services/api-client.service';
+import { formatCurrency, getProducts } from '@/src/services/product.service';
 
 function getProductImage(product: Product) {
   return product.images.find((image) => image.isPrimary)?.imageUrl ?? product.images[0]?.imageUrl ?? '';
@@ -27,6 +29,7 @@ export default function ProductsClient({ initialSearch, initialFeatured }: { ini
         const response = await getProducts({
           page,
           pageSize: 12,
+          status: 'active',
           search: initialSearch || undefined,
           featured: initialFeatured || undefined,
         });

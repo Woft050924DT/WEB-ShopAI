@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { formatCurrency, getProduct, normalizeApiError, type Product, type ProductVariant } from '@/src/lib/api';
+import type { Product, ProductVariant } from '@/src/models/product.model';
+import { normalizeApiError } from '@/src/services/api-client.service';
+import { formatCurrency, getProduct } from '@/src/services/product.service';
 import { upsertCartItem } from '@/src/lib/storage';
 
 function getDefaultVariant(product: Product) {

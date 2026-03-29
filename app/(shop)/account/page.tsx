@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { formatCurrency } from '@/src/lib/api';
-import { clearStoredAuth, getStoredAuth, getStoredOrders, type StoredAuth } from '@/src/lib/storage';
+import { getCurrentUser, logout } from '@/src/services/auth.service';
+import { normalizeApiError } from '@/src/services/api-client.service';
+import { formatCurrency } from '@/src/services/product.service';
+import { clearSessionStorage, clearStoredAuth, getStoredAuth, getStoredOrders, setStoredAuth, type StoredAuth } from '@/src/lib/storage';
 
 function getStatusTone(status: string) {
   switch (status) {
@@ -19,8 +22,10 @@ function getStatusTone(status: string) {
 }
 
 export default function AccountPage() {
+  const router = useRouter();
   const [auth, setAuth] = useState<StoredAuth | null>(null);
   const [orders, setOrders] = useState(getStoredOrders());
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const syncState = () => {
@@ -29,6 +34,19 @@ export default function AccountPage() {
     };
 
     syncState();
+    void getCurrentUser()
+      .then((user) => {
+        if (user.role === 'admin') {
+          router.replace('/admin');
+          return;
+        }
+
+        setStoredAuth({ user, token: getStoredAuth()?.token });
+      })
+      .catch(() => {
+        clearStoredAuth();
+        setAuth(null);
+      });
     window.addEventListener('storage', syncState);
     window.addEventListener('vietshop-storage', syncState);
 
@@ -36,7 +54,21 @@ export default function AccountPage() {
       window.removeEventListener('storage', syncState);
       window.removeEventListener('vietshop-storage', syncState);
     };
-  }, []);
+  }, [router]);
+
+  const handleLogout = async () => {
+    setError('');
+
+    try {
+      await logout();
+    } catch (err) {
+      setError(normalizeApiError(err));
+    } finally {
+      clearSessionStorage();
+      setAuth(null);
+      router.replace('/auth/login');
+    }
+  };
 
   const stats = useMemo(() => {
     const totalSpent = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
@@ -61,6 +93,7 @@ export default function AccountPage() {
   return (
     <div className="bg-[#F4F6FB]">
       <div className="mx-auto max-w-7xl px-4 py-8">
+        {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
         <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="overflow-hidden rounded-[24px] border border-[#DDE3EE] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
             <div className="border-b border-[#E7ECF3] px-6 py-7 text-center">
@@ -79,10 +112,7 @@ export default function AccountPage() {
                 Dia chi
               </Link>
               <button
-                onClick={() => {
-                  clearStoredAuth();
-                  setAuth(null);
-                }}
+                onClick={handleLogout}
                 className="flex w-full items-center justify-between px-4 py-3 text-left font-medium text-[#EF3D32] hover:bg-[#F8FAFC]"
               >
                 Dang xuat
